@@ -49,7 +49,12 @@ def new_subject():
         subject = Subject(id = hash_str)
         db.session.add(subject) #############
         db.session.commit()
-        global subject_id
+        
+        global subject_id,max_questions,question_counter
+        subject_id = 1
+        max_questions = 3
+        question_counter = 0
+
         return redirect(url_for('interview'))
         
     return render_template('new-subject.html')
