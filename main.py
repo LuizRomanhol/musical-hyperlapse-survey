@@ -100,6 +100,8 @@ def interview():
         #         
     return render_template('interview.html', video=get_video_paths(), question_counter=str(question_counter), max_questions=str(max_questions))
     
-app.run(debug=True)
-
-
+if __name__ == '__main__':
+    # This is used when running locally only. When deploying to Google App
+    # Engine, a webserver process such as Gunicorn will serve the app.
+    app.run(host='127.0.0.1', port=8080, debug=True)
+# [END gae_flex_quickstart]
