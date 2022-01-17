@@ -1,35 +1,53 @@
 from datetime import MAXYEAR
 from flask import Flask, render_template, request, redirect, url_for
-from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql import func
-import random
+
+from pydrive.auth import GoogleAuth
+from pydrive.drive import GoogleDrive
 import hashlib
 import os
+import string
+import random
 
-db = SQLAlchemy()
-DB_NAME = "database.db"
 
 app = Flask(__name__)
-
 app.config['SECRET_KEY'] = 'password'
-app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{DB_NAME}'
 
-db.init_app(app)
 subject_id = 1
 max_questions = 3
 question_counter = 0
+answers = []
 
-class Answer(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    subject_id = db.Column(db.Integer, db.ForeignKey('subject.id'))
-    chosen = db.Column(db.String(255))
-    options = db.Column(db.String(255))
+def id_generator(size=6, chars=string.ascii_uppercase + string.digits):
+	return ''.join(random.choice(chars) for _ in range(size))
 
-class Subject(db.Model):
-    id = db.Column(db.String(255), primary_key=True)
+def send_data():
+	gauth = GoogleAuth()
+	gauth.LoadCredentialsFile("mycreds.txt")
 
-db.create_all(app=app)
+	drive = GoogleDrive(gauth)
+	#gauth.LocalWebserverAuth()
+	#gauth.SaveCredentialsFile("mycreds.txt")
 
+	fileList = drive.ListFile({'q': "'root' in parents and trashed=false"}).GetList()
+	for file in fileList:
+		if(file['title'] == "survey-database"):
+			fileID = file['id']
+			print("fileID : ", fileID)
+		
+	global subject_id
+	upload_file = subject_id+".txt"
+
+	file = open(upload_file, "w")
+	global answers 
+	
+	file.write('\n'.join(answers)) 
+	file.close() 
+
+	gfile = drive.CreateFile({'parents': [{'id':fileID}]})
+	gfile.SetContentFile(upload_file)
+	gfile.Upload() 
+	
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -46,15 +64,12 @@ def new_subject():
         hash = hashlib.md5(email.encode('utf-8')).digest()
         hash_str = str(int.from_bytes(hash,"big"))
         print(hash_str,"hash str")
-        subject = Subject(id = hash_str)
-        db.session.add(subject) #############
-        db.session.commit()
         
         global subject_id,max_questions,question_counter
-        subject_id = 1
+        subject_id = hash_str
         max_questions = 3
         question_counter = 0
-
+		
         return redirect(url_for('interview'))
         
     return render_template('new-subject.html')
@@ -98,15 +113,17 @@ def interview():
         print("CHOSen",chosen)
         print("Options",options)
         if question_counter >= max_questions:
+            send_data()
             return redirect(url_for('thank_you'))
-        answer = Answer(subject_id = subject_id, chosen = chosen, options = options) 
-        db.session.add(answer) #############
-        db.session.commit()
-        #         
+            
+        global answers
+        answer = "chosen index " + str(chosen) + " of " + str(options) 
+        answers.append(answer)
+
     return render_template('interview.html', video=get_video_paths(), question_counter=str(question_counter), max_questions=str(max_questions))
     
 if __name__ == '__main__':
     # This is used when running locally only. When deploying to Google App
     # Engine, a webserver process such as Gunicorn will serve the app.
-    app.run(host='127.0.0.1', port=8080, debug=True)
+    app.run(host='127.0.0.1', port=8075, debug=True)
 # [END gae_flex_quickstart]
