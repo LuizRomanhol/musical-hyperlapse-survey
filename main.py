@@ -19,7 +19,7 @@ def send_data():
         file.write('\n'.join(session['answers'])) 
         file.close()
 
-@app.route('/')
+@app.route('/begin')
 def index():
     return render_template('index.html')
 
