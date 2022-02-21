@@ -56,11 +56,6 @@ def interview():
         ours = os.listdir(ours_path)
         baseline = os.listdir(baseline_path)
 
-        print("ours",ours)#random.shuffle(videos)
-        print("baseline",baseline)#random.shuffle(videos)
-        print("ours_path",ours_path)#random.shuffle(videos)
-        print("baseline_path",baseline_path)#random.shuffle(videos)
-
         for i in range(len(baseline)):
             baseline[i] = baseline_path + baseline[i]
         for i in range(len(ours)):
@@ -78,9 +73,6 @@ def interview():
         post = request.form["choice"]
         chosen = post.split(',')[0][1:]
         options = post.replace(chosen,"")[3:-1]
-
-        print("CHOSen",chosen)
-        print("Options",options)
 
         global answers
         answer = "chosen index " + str(chosen) + " of " + str(options) 
