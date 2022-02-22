@@ -47,27 +47,39 @@ def new_subject():
 @app.route('/interview', methods=['GET', 'POST'])
 def interview():
 
-    global max_questions
+    def get_question_list():
 
-    def get_video_paths():
-        ours_path = "static/videos/ours/"
-        baseline_path = "static/videos/baseline/"
-
-        ours = os.listdir(ours_path)
-        baseline = os.listdir(baseline_path)
-
-        for i in range(len(baseline)):
-            baseline[i] = baseline_path + baseline[i]
-        for i in range(len(ours)):
-            ours[i] = ours_path + ours[i]
-
-        baseline_1, baseline_2 = random.sample(baseline,2)
-        videos = [random.choice(ours),baseline_1,baseline_2]
-
+        question_root = "static/videos/"
+        question_names = os.listdir(question_root)
+        question_folders = []
+        
+        for name in question_names:
+            question_folders.append(question_root + name)
+			
+        question_list = []
+                
+        for folder in question_folders:
+            video_names = os.listdir(folder)
+            video_paths = []
+            for name in video_names:
+            	video_paths.append(folder+"/"+name)
+            question_list.append(video_paths)
+		
+        print("INIT QUESTION LIST DEBUG:",question_list)
+        
+        return question_list
+        
+    def get_video_paths():  
+    
+        questions = get_question_list()
+        video_paths = questions[session['question_counter']-1]
+        random.shuffle(video_paths)
         session['question_counter'] = session['question_counter'] + 1
+        return video_paths
 
-        return videos
-
+    def get_question_amount():
+        return len(get_question_list())
+		
     if request.method == 'POST':
         print("CHOICES",request.form["choice"])
         post = request.form["choice"]
@@ -78,14 +90,13 @@ def interview():
         answer = "chosen index " + str(chosen) + " of " + str(options) 
         session['answers'].append(answer)
 
-        if session['question_counter'] >= max_questions:
+        if session['question_counter'] >= get_question_amount():
             send_data()
             return redirect(url_for('thank_you'))
-	
-    return render_template('interview.html', video=get_video_paths(), question_counter=str(session['question_counter']), max_questions=str(max_questions))
+    
+    return render_template('interview.html', video=get_video_paths(), question_counter=str(session['question_counter']), max_questions=str(get_question_amount()))
     
 if __name__ == '__main__':
-    max_questions = 3
     app.run(host='0.0.0.0', port=8875, debug=False, threaded=True)
 
 
